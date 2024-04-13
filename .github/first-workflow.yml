@@ -1,0 +1,18 @@
+# This is first github action workflow to execute few shell commands
+# Authur: @manoj-chaudhary
+
+name: first_workflow
+
+on: workflow_dispatch
+
+jobs:
+  first_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: print greeting
+        run: echo "Hellow World"
+      - name: print goodbye
+        run: echo "GoodBye"
+       
+    
+  
