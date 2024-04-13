@@ -3,7 +3,9 @@
 ################################################
 
 name: CICD template workflow
-on: workflow_dispatch # provide option to run the job manually
+
+#on: workflow_dispatch # provide option to run the job manually
+on: [workflow_dispatch,push]
 
 jobs:
   CI:
