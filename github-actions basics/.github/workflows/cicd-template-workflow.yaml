@@ -1,0 +1,20 @@
+## This github actions workflow is to create template for continous integration and continouse deployment
+## Author : @manojChaudhary #######
+################################################
+
+name: CICD template workflow
+on: workflow_dispatch # provide option to run the job manually
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+      - name: CHECKOUT
+        run: echo "checkout the code from repo"
+      - name: BUILD
+        run: echo "building the project"
+      - name: TEST 
+        run: echo "SMOK TESTING"
+      - name: DEPLOY
+        run: echo "Deploying the project to cluster"
+  
