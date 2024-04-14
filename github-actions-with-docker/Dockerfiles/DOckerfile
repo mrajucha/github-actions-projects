@@ -1,0 +1,28 @@
+#
+
+
+FROM ubuntu:latest
+
+# To Execute commands
+RUN sudo apt install default-jdk   
+
+RUN mkdir /opt/tomcat
+
+# to create work directory in container
+WORKDIR /opt/                 
+
+# Add local or remote files
+ADD https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.87/bin/apache-tomcat-9.0.87.zip .
+
+RUN tar -xzvf apache-tomcat-9.0.87.zip
+
+RUN mv apache-tomcat-9.0.87/* /opt/tomcat
+
+
+# Describe which ports your application is listening on 
+EXPOSE 8083
+
+#Specify default commands which overrites the other commands
+CMD ["opt/tomcat/bin/catalina.sh", "run"]
+
+

@@ -1,0 +1,81 @@
+    pipeline {
+        agent any
+        tools{
+            maven 'Default'
+        }
+        stages {
+            stage('Checkout') {
+                steps {
+                    checkout([$class: 'GitSCM', 
+                            branches: [[name: 'main']], 
+                            userRemoteConfigs: [[url: 'https://github.com/mrajucha/Simple-java-app.git']]])
+                }
+            }
+            stage('Compile'){
+                steps{
+                    sh "mvn clean compile"
+                }
+            }
+        
+            stage('Code Scan'){
+                when{
+                    branch 'my-feature' // Condition to skip this step to reduce execution effort/time
+                }
+                steps{
+                     sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.url=http://35.87.44.34:9000/ -Dsonar.login=e6913f2a25c4eca867cf5db1de934beb312edb35 -Dsonar.projectName=demo-project \
+                           -Dsonar.java.binaries=. \
+                           -Dsonar.projectKey=demo-project '''
+                }       
+            }
+            stage('maven clean inatall'){
+                steps{
+                    sh 'mvn clean install'    // builds jar file out of application
+                }
+            }
+            stage('Build Docker Image'){
+                steps{
+                    script{
+                        sh 'docker build -t java-demo-app.jar .'   // build docker image from the instructions of dockerfile
+                    }
+                }
+            }
+            stage('Docker login '){
+                steps{
+                    withCredentials([string(credentialsId: 'dockerpwd', variable: 'dockerpwd')]) {
+                            sh 'docker login -u mrajucha922 -p ${dockerpwd}'
+                    }
+                }
+            }
+             stage('Push Docker Image') {
+                steps{
+                    script{
+                        withCredentials([string(credentialsId: 'dockerpwd', variable: 'dockerpwd')]) {
+                           sh 'docker login -u mrajucha922 -p ${dockerpwd}'
+                           sh 'docker push mrajucha922/java-demo-app:latest '  // Docker image should be in this formate(username/image-name:latest) only else error
+                        }
+                    }
+                }
+             }
+
+             stage('Deploying demo-app to Kubernetes') {
+                steps {
+                    script {
+                          sh ('aws eks update-kubeconfig --name eks-with-jenkins --region us-west-2')
+                          sh "kubectl get ns"
+                          sh "kubectl apply -f deployment.yaml"
+                         }
+                       }
+                    }
+            // post {
+            //     always {
+            //             junit '**/target/*.xml'
+            //         }
+            //     failure {
+            //             mail to: team@example.com, subject: 'The Pipeline failed :('
+            //         }
+            //     }
+            }
+        }
+    
+
+

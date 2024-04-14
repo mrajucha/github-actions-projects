@@ -1,0 +1,124 @@
+@Library('cocond-sharedlib@master') _
+  
+pipeline {
+    agent {label 'jaws-slaves||jaws-dynamic-slaves'}
+    environment {
+        microserviceId = 'appd-registry'
+        mavenVersion = 'Maven 3.6'
+        javaVersion =  'JDK 17'
+        mavenOpts = "-DMAVEN_OPTS='-Xms512m -Xmx2048m'"
+        sonarUrl = 'https://connectedcicd.bmwgroup.net/cicdsonar/'
+        environment = 'e2e'
+        nextEnv= 'prod'
+        ecrRepo = '334141358601.dkr.ecr.eu-central-1.amazonaws.com/skynet/app-distribution/registry'
+        ecrRepoNextEnv = '334141358601.dkr.ecr.eu-central-1.amazonaws.com/skynet/app-distribution/registry'
+        pomPath = 'pom.xml'
+        credECR = 'aws_ecr_e2e'
+        credEKS = 'aws_eks_e2e'
+        cluster = 'skynet-e2e'
+        region = 'eu-central-1'
+        orbitNamespace = 'app-distribution'
+        eksDatabaseSecretName = 'appd-registry-secret-db'
+        orbitProduct = 'skynet'
+        artifactId = 'root-pom'
+        type = 'orbit'
+        infra = 'AWS'
+    }
+    options {
+        timestamps()
+        ansiColor('xterm')
+    }
+   stages {
+         stage('Select Image to Deploy'){
+            steps{
+                script{
+                    def imageList = getImageListFromEcr()
+                    def userInput = input(
+                            id: 'userInput', message: '',
+                            parameters: [
+                                    choice(name: 'imageTag', choices: imageList , description: 'Select image to deploy'),
+                                    stringParam(name: 'explicitImageTag', value: '', description: 'For image tag not listed in drop-down above, explicitImageTag box can be used.'),
+ 
+                            ])
+ 
+                    env.imageTag = userInput.explicitImageTag == '' ?  userInput.imageTag : userInput.explicitImageTag
+                }
+            }
+        }
+        stage('Checkout Tag') {
+            steps {
+                script{
+                    def tagName ="${env.imageTag}".replace('-' + "${env.environment}".toLowerCase(),'-test')
+                    checkoutRepo(env.GIT_URL,tagName)
+                }
+            }
+        }
+        stage('Pull Docker Image') {
+            steps {
+                script{
+                    pullDockerImage(env.ecrRepo,env.credEcr)
+                }
+            }
+        }
+        stage("Orbit Migrate DB") {
+                        steps{
+                            script{
+                                def command  = "-B compile flyway:migrate -P ${env.region}-${env.environment}"
+                                def filePath = "db-migration/pom.xml"
+                                migrateDb.dockerizeMigrateDB(command,filePath)
+                            }
+                        }
+                    }
+        stage('Resource Lock'){
+            options{
+                lock(resource: "Locking Deployment Resources: EKS Cluster", inversePrecedence: true)
+            }
+            stages{
+                stage('Deploy on EKS Cluster'){
+                    steps{
+                        script{
+                            def kustomizePath= "assembly-kubernetes/src/main/resources/kustomize/overlays"
+                            deployEKS(kustomizePath,env.cluster,env.credEKS,env.imageTag)
+                        }
+                    }
+                }
+            }
+        }
+        stage('Orbit Smoke Test') {
+            steps {
+                script {
+                    def masterPasswordCredentialsID = 'APPD-REGISTRY-eu-central-1-e2e-master-password'
+                    def command = ''
+                    def testType = 'smoke'
+                    executeMaven.runDockerizeTest(masterPasswordCredentialsID, testType, command,env.pomPath)
+                }
+            }
+        }
+        stage('Orbit Integration Test') {
+            steps {
+                script {
+                    def masterPasswordCredentialsID = 'APPD-REGISTRY-eu-central-1-e2e-master-password'
+                    def command = ''
+                    def testType = 'integration'
+                    executeMaven.runDockerizeTest(masterPasswordCredentialsID, testType, command,env.pomPath)
+                }
+            }
+        }
+        stage("Transfer Image"){
+            steps{
+                script{
+                    credECR = 'aws_ecr_' + "${env.nextEnv}".toLowerCase()
+                    promoteDockerImage(env.ecrRepo,env.ecrRepoNextEnv,credECR,env.imageTag)
+ 
+                }
+            }
+        }
+    }
+    post{
+        success{
+            script {
+                orbitReportingForDeploy()
+            }
+        }
+    }
+}
