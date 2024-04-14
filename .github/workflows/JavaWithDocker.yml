@@ -1,0 +1,17 @@
+## This workflow is to create Docker image of simple java app and to push it DockerHub. ############
+## Author: @manojChaudhary ########
+
+name: java app image deployment to DockerHub Workflow
+
+on: push
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4.1.1
+          
+    
+   
+
