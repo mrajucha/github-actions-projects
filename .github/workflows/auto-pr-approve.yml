@@ -12,6 +12,8 @@ jobs:
     steps:
         - name: Checkout
           uses: actions/checkout@v4.1.1
+        - name: Comment
+          run: echo "Validation complete"  
 
 #Commenting          
 
