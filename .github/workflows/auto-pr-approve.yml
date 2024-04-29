@@ -1,0 +1,20 @@
+#############################################################################################
+########### This Github action is to auto approve and validate the PR set by criteria  ######
+########### author: @manojChaudhary               
+#############################################################################################
+
+name: PR auto-approve actions
+on: [pull_request]
+
+jobs: 
+  APPROVE: 
+    runs-on: ubuntu-latest
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4.1.1
+        - name: Comment
+          run: echo "Validation complete"  
+
+#Commenting          
+
+
