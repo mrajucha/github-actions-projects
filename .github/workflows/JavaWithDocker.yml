@@ -3,7 +3,8 @@
 
 name: java app image deployment to DockerHub Workflow
 
-on: push
+on: workflow_dispatch
+# on: push
 
 jobs:
   CI:
