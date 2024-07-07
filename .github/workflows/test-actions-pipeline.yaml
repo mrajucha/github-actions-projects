@@ -10,21 +10,49 @@ on:
   workflow_dispatch: 
     branches:
       - main
+
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Fetch latest Go version
+        id: go-version
+        run: echo "::set-output name=version::$(curl -s https://go.dev/VERSION?m=text)"
 
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.17'
+          go-version: "${{ steps.go-version.outputs.version }}"
 
       - name: Install dependencies
         run: go mod tidy
 
       - name: Run tests
-        run: go test ./...
+        run: |
+          go test ./... -v | tee go-test-results.txt
+
+      - name: Print test results
+        run: cat go-test-results.txt
+
+# jobs:
+#   test:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v2
+
+#       - name: Set up Go
+#         uses: actions/setup-go@v2
+#         with:
+#           go-version: '1.17'
+
+#       - name: Install dependencies
+#         run: go mod tidy
+
+#       - name: Run tests
+#         run: go test ./...
