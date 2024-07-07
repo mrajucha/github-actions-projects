@@ -14,27 +14,27 @@ jobs:
   test:
     runs-on: ubuntu-latest
        steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+         - name: Checkout code
+           uses: actions/checkout@v2
 
-      - name: Fetch latest Go version
-        id: go-version
-        run: echo "::set-output name=version::$(curl -s https://go.dev/VERSION?m=text)"
+         - name: Fetch latest Go version
+           id: go-version
+           run: echo "::set-output name=version::$(curl -s https://go.dev/VERSION?m=text)"
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: "${{ steps.go-version.outputs.version }}"
+         - name: Set up Go
+           uses: actions/setup-go@v2
+           with:
+             go-version: "${{ steps.go-version.outputs.version }}"
 
-      - name: Install dependencies
-        run: go mod tidy
+         - name: Install dependencies
+           run: go mod tidy
 
-      - name: Run tests
-        run: |
-          go test ./... -v | tee go-test-results.txt
+         - name: Run tests
+           run: |
+              go test ./... -v | tee go-test-results.txt
 
-      - name: Print test results
-        run: cat go-test-results.txt
+         - name: Print test results
+           run: cat go-test-results.txt
     # steps:
     #   - name: Checkout repository
     #     uses: actions/checkout@v2
