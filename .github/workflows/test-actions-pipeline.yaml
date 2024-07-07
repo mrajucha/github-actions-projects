@@ -11,11 +11,11 @@ on:
     branches:
       - main
 
-jobs:
-  build:
+jobs:      #Actual Build name
+  CI:
     runs-on: ubuntu-latest
 
-    steps:
+    steps:     # stage names visible 
       - name: Checkout code
         uses: actions/checkout@v2
 
